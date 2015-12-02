@@ -11,12 +11,14 @@
 				font-size: small;
 			}
 
-			.title {
-				margin-bottom: 1em;
+			select {
+				height: 50px;
+				font-size: large;
 			}
 
 			.legend {
-				margin-top: 1em;
+				margin: 1em 0em;
+				margin-left: 50%;
 			}
 
 			.legend .title {
@@ -25,6 +27,7 @@
 				line-height: 1.2em;
 				padding: 0 0.3em;
 				float: left;
+				font-size: large;
 			}
 
 			.legend .color-sample {
@@ -40,13 +43,53 @@
 	<body>
 		<div style="width:90%">
 			<div>
-				<div id="title"></div>
-				<canvas id="canvas"></canvas>
+				<select id="selTitle"></select>
 				<div id="lineLegend"></div>
+				<canvas id="canvas"></canvas>
 			</div>
 		</div>
 
 	<script>
+
+	var results;
+	var canvas = $("#canvas");
+	var ctx = canvas[0].getContext("2d");
+	var lineLegend = $("#lineLegend");
+	var selTitle = $("#selTitle");
+
+	var lineChartData = {
+		labels : [],
+		datasets : [
+			{
+				label: "Recall",
+				strokeColor : "#f00",
+				pointColor : "#f00",
+				pointStrokeColor : "#fff",
+				pointHighlightFill : "#fff",
+				pointHighlightStroke : "rgba(220,220,220,1)",
+				data : []
+			},
+			{
+				label: "Precision",
+				strokeColor : "#0f0",
+				pointColor : "#0f0",
+				pointStrokeColor : "#fff",
+				pointHighlightFill : "#fff",
+				pointHighlightStroke : "rgba(151,187,205,1)",
+				data : []
+			},
+			{
+				label: "F1",
+				strokeColor : "#00f",
+				pointColor : "#00f",
+				pointStrokeColor : "#fff",
+				pointHighlightFill : "#fff",
+				pointHighlightStroke : "rgba(151,187,205,1)",
+				data : []
+			}
+		]
+
+	}
 
 	function legend(parent, data) {
 		legend(parent, data, null);
@@ -107,62 +150,47 @@
 
 	function noop() {}
 
-	var lineChartData = {
-		labels : [],
-		datasets : [
-			{
-				label: "Recall",
-				strokeColor : "#f00",
-				pointColor : "#f00",
-				pointStrokeColor : "#fff",
-				pointHighlightFill : "#fff",
-				pointHighlightStroke : "rgba(220,220,220,1)",
-				data : []
-			},
-			{
-				label: "Precision",
-				strokeColor : "#0f0",
-				pointColor : "#0f0",
-				pointStrokeColor : "#fff",
-				pointHighlightFill : "#fff",
-				pointHighlightStroke : "rgba(151,187,205,1)",
-				data : []
-			},
-			{
-				label: "F1",
-				strokeColor : "#00f",
-				pointColor : "#00f",
-				pointStrokeColor : "#fff",
-				pointHighlightFill : "#fff",
-				pointHighlightStroke : "rgba(151,187,205,1)",
-				data : []
-			}
-		]
-
-	}
-
-	window.onload = function(){
-		var ctx = document.getElementById("canvas").getContext("2d");
-		$.getJSON("report.json", function (res) {
-			var data = res[0];
-			lineChartData.labels = data.labels;
-			lineChartData.datasets[0].data = data.recall;
-			lineChartData.datasets[1].data = data.precision;
-			lineChartData.datasets[2].data = data.f1;
-			new Chart(ctx).Line(lineChartData, {
-				responsive: true,
-				datasetFill: false,
-				bezierCurve: false,
-				scaleOverride: true,
-				scaleSteps: 10,
-				scaleStepWidth: 0.1,
-				scaleStartValue: 0
-			});
-			legend(document.getElementById("lineLegend"), lineChartData);
-			document.getElementById("title").innerHTML = data.name;
+	function loadChart(id) {
+		canvas.empty();
+		var data = results[id];
+		lineChartData.labels = data.labels;
+		lineChartData.datasets[0].data = data.recall;
+		lineChartData.datasets[1].data = data.precision;
+		lineChartData.datasets[2].data = data.f1;
+		new Chart(ctx).Line(lineChartData, {
+			responsive: true,
+			datasetFill: false,
+			bezierCurve: false,
+			scaleOverride: true,
+			scaleSteps: 10,
+			scaleStepWidth: 0.1,
+			scaleStartValue: 0
 		});
+		legend(lineLegend[0], lineChartData);
 	}
 
+	$(document).ready(function() {
+
+		// load data
+		$.getJSON("report.json", function (res) {
+			results = res;
+			if (res && res.length > 0){
+				// load chart
+				loadChart(0);
+				// load title (data) select options
+				$.each(res, function(index, data) {
+					selTitle.append($("<option>").attr("value", index).text(data.name));
+				});
+			} else {
+				alert("Failed to load report.json");
+			}
+		});
+
+		// event handler
+		selTitle.change(function() {
+			loadChart(this.selectedIndex);
+		});
+	});
 
 	</script>
 	</body>
