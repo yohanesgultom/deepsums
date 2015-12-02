@@ -14,24 +14,26 @@ public class Summary {
     @Getter private float[][] rawData;
     @Getter private int totalRetrieved;
     @Getter private int totalCorrect;
+    @Getter private int totalCorrectExpected;
 
-    public Summary(List<String> _sentences, float[][] _rawData, int _totalRetrieved, int _totalCorrect) {
+    public Summary(List<String> _sentences, float[][] _rawData, int _totalRetrieved, int _totalCorrect, int _totalCorrectExpected) {
         this.sentences = _sentences;
         this.rawData = _rawData;
         this.totalRetrieved = _totalRetrieved;
         this.totalCorrect = _totalCorrect;
+        this.totalCorrectExpected = _totalCorrectExpected;
+    }
+
+    public int getTotalWrong() {
+        return totalRetrieved - totalCorrect;
     }
 
     public float getRecall() {
-        return (totalRetrieved - totalCorrect) / new Float(totalRetrieved);
+        return totalCorrect / new Float(totalCorrectExpected);
     }
 
     public float getPrecision() {
-        return (totalRetrieved - totalCorrect) / new Float(totalCorrect);
-    }
-
-    public float getCorrectPercentage() {
-        return totalCorrect / new Float(totalRetrieved) * 100.0f;
+        return totalCorrect / new Float(totalRetrieved);
     }
 
     public float getFMeasure() {

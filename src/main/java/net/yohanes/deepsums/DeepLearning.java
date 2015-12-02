@@ -72,8 +72,8 @@ public class DeepLearning {
     }
 
     public void train(String filepathTrain) {
-        int numSamples = 1000;
-        int batchSize = 10;
+        int numSamples = -1; // use all samples
+        int batchSize = 100;
         int listenerFreq = 1;
         log.info("Load data....");
         DataSetIterator iterTrain = new DUCDataSetIterator(batchSize, numSamples, filepathTrain);
@@ -84,7 +84,7 @@ public class DeepLearning {
     }
 
     public Summary summarize(String filepathTest, String filepathSentencesTest, float[] fThreshold) throws IOException {
-        int numSamples = 1000;
+        int numSamples = -1; // use all samples
         int batchSize = 100;
 
         // Customizing params
@@ -97,6 +97,7 @@ public class DeepLearning {
         List<Integer> sentencesIds = new ArrayList<Integer>();
         int totalSentences = 0;
         int totalCorrect = 0;
+        int totalCorrectExpected = 0;
         float[] maxThreshold = {0.0f, 0.0f, 0.0f, 0.0f};
         float[] averageThreshold = {0.0f, 0.0f, 0.0f, 0.0f};
         while (iterTest.hasNext()) {
@@ -104,14 +105,15 @@ public class DeepLearning {
             INDArray labels = batch.getLabels();
             // choose random threshold {f1, f2, f3, f4}
             INDArray o = testModel.output(batch.getFeatureMatrix());
-            for (int i=0; i<o.rows();i++) {
+            int rowCount = o.rows();
+            for (int i=0; i<rowCount;i++) {
                 INDArray row = o.getRow(i);
                 boolean take = true;
                 for (int j=0; j<fThreshold.length; j++) {
                     // get max threshold for analysis
                     maxThreshold[j] = (maxThreshold[j] < row.getFloat(j)) ? row.getFloat(j) : maxThreshold[j];
                     averageThreshold[j] += row.getFloat(j);
-                    if (row.getFloat(j) <= fThreshold[j]) {
+                    if (fThreshold[j] != 0.0f && row.getFloat(j) < fThreshold[j]) {
                         // don't use sentence as summary
                         take = false;
                         break;
@@ -122,6 +124,9 @@ public class DeepLearning {
                     if (labels.getRow(i).getFloat(0) == 1.0f) {
                         totalCorrect++;
                     }
+                }
+                if (labels.getRow(i).getFloat(0) == 1.0f) {
+                    totalCorrectExpected++;
                 }
             }
             totalSentences += o.rows();
@@ -139,10 +144,12 @@ public class DeepLearning {
             averageThreshold[i] = averageThreshold[i] / totalSentences;
         }
 
-        log.info("Max threshold: " + StringUtils.join(maxThreshold, ','));
-        log.info("Avg threshold: " + StringUtils.join(averageThreshold, ','));
+//        log.info("Max threshold: " + StringUtils.join(maxThreshold, ','));
+//        log.info("Avg threshold: " + StringUtils.join(averageThreshold, ','));
 
-        return new Summary(summary, rawData, sentencesIds.size(), totalCorrect);
+//        log.info("totalCorrect + totalWrong = " + totalCorrect + " + " + totalWrong + " = " + sentencesIds.size());
+        log.info("totalCorrect / totalRetrieved = " + totalCorrect + " (" + totalCorrectExpected + ") " + " / " + sentencesIds.size() + " = " + (totalCorrect / new Double(sentencesIds.size())));
+        return new Summary(summary, rawData, sentencesIds.size(), totalCorrect, totalCorrectExpected);
     }
 
     public static void main(String[] args) throws IOException {
@@ -176,11 +183,6 @@ public class DeepLearning {
                 recallList.add(new Double(summary.getRecall()));
                 precisionList.add(new Double(summary.getPrecision()));
                 f1List.add(new Double(summary.getFMeasure()));
-                log.info("Percentage: " + summary.getCorrectPercentage());
-                log.info("TotalCorrect: " + summary.getTotalCorrect() + " / " + summary.getTotalRetrieved());
-                log.info("Recall: " + summary.getRecall());
-                log.info("Precision: " + summary.getPrecision());
-                log.info("Fmeasure: " + summary.getFMeasure());
             }
             Map<String, Object> result = new LinkedHashMap<String, Object>();
             result.put("name", testing.get("data"));
