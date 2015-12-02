@@ -1,0 +1,15 @@
+{
+  "training":
+  [
+    "/home/yohanes/Workspace/deep-learning-text-summarization/training.csv"
+  ],
+  "testing":
+  [
+    {
+      "data" : "/home/yohanes/Workspace/deep-learning-text-summarization/D0607.csv",
+      "sentences" : "/home/yohanes/Workspace/deep-learning-text-summarization/D0607.txt",
+      "threshold" : [0.0, 0.002, 0.01, 0.5, 1.0, 1.5]
+    }
+
+  ]
+}

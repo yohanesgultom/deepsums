@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Line Chart</title>
+		<script src="jquery-1.11.3.min.js"></script>
+		<script src="Chart.min.js"></script>
+		<style>
+			body {
+				color: grey;
+				font-family: "Droid Sans";
+				font-size: small;
+			}
+
+			.title {
+				margin-bottom: 1em;
+			}
+
+			.legend {
+				margin-top: 1em;
+			}
+
+			.legend .title {
+				display: block;
+				margin-bottom: 0.5em;
+				line-height: 1.2em;
+				padding: 0 0.3em;
+				float: left;
+			}
+
+			.legend .color-sample {
+				display: block;
+				float: left;
+				width: 1em;
+				height: 1em;
+				border-radius: 0.5em; /* Comment out if you prefer squarish samples */
+				margin-right: 0.5em;
+			}
+		</style>
+	</head>
+	<body>
+		<div style="width:90%">
+			<div>
+				<div id="title"></div>
+				<canvas id="canvas"></canvas>
+				<div id="lineLegend"></div>
+			</div>
+		</div>
+
+	<script>
+
+	function legend(parent, data) {
+		legend(parent, data, null);
+	}
+
+	function legend(parent, data, chart, legendTemplate) {
+		legendTemplate = typeof legendTemplate !== 'undefined' ? legendTemplate : "<%=label%>";
+		parent.className = 'legend';
+		var datas = data.hasOwnProperty('datasets') ? data.datasets : data;
+		// remove possible children of the parent
+		while(parent.hasChildNodes()) {
+			parent.removeChild(parent.lastChild);
+		}
+
+		var show = chart ? showTooltip : noop;
+		datas.forEach(function(d, i) {
+
+			//span to div: legend appears to all element (color-sample and text-node)
+			var title = document.createElement('div');
+			title.className = 'title';
+			parent.appendChild(title);
+
+			var colorSample = document.createElement('div');
+			colorSample.className = 'color-sample';
+			colorSample.style.backgroundColor = d.hasOwnProperty('strokeColor') ? d.strokeColor : d.color;
+			colorSample.style.borderColor = d.hasOwnProperty('fillColor') ? d.fillColor : d.color;
+			title.appendChild(colorSample);
+			legendNode=legendTemplate.replace("<%=value%>",d.value);
+			legendNode=legendNode.replace("<%=label%>",d.label);
+			var text = document.createTextNode(legendNode);
+			text.className = 'text-node';
+			title.appendChild(text);
+
+			show(chart, title, i);
+		});
+	}
+
+	//add events to legend that show tool tips on chart
+	function showTooltip(chart, elem, indexChartSegment){
+		var helpers = Chart.helpers;
+
+		var segments = chart.segments;
+		//Only chart with segments
+		if(typeof segments != 'undefined'){
+			helpers.addEvent(elem, 'mouseover', function(){
+				var segment = segments[indexChartSegment];
+				segment.save();
+				segment.fillColor = segment.highlightColor;
+				chart.showTooltip([segment]);
+				segment.restore();
+			});
+
+			helpers.addEvent(elem, 'mouseout', function(){
+				chart.draw();
+			});
+		}
+	}
+
+	function noop() {}
+
+	var lineChartData = {
+		labels : [],
+		datasets : [
+			{
+				label: "Recall",
+				strokeColor : "#f00",
+				pointColor : "#f00",
+				pointStrokeColor : "#fff",
+				pointHighlightFill : "#fff",
+				pointHighlightStroke : "rgba(220,220,220,1)",
+				data : []
+			},
+			{
+				label: "Precision",
+				strokeColor : "#0f0",
+				pointColor : "#0f0",
+				pointStrokeColor : "#fff",
+				pointHighlightFill : "#fff",
+				pointHighlightStroke : "rgba(151,187,205,1)",
+				data : []
+			},
+			{
+				label: "F1",
+				strokeColor : "#00f",
+				pointColor : "#00f",
+				pointStrokeColor : "#fff",
+				pointHighlightFill : "#fff",
+				pointHighlightStroke : "rgba(151,187,205,1)",
+				data : []
+			}
+		]
+
+	}
+
+	window.onload = function(){
+		var ctx = document.getElementById("canvas").getContext("2d");
+		$.getJSON("report.json", function (res) {
+			var data = res[0];
+			lineChartData.labels = data.labels;
+			lineChartData.datasets[0].data = data.recall;
+			lineChartData.datasets[1].data = data.precision;
+			lineChartData.datasets[2].data = data.f1;
+			new Chart(ctx).Line(lineChartData, {
+				responsive: true,
+				datasetFill: false,
+				bezierCurve: false,
+				scaleOverride: true,
+				scaleSteps: 10,
+				scaleStepWidth: 0.1,
+				scaleStartValue: 0
+			});
+			legend(document.getElementById("lineLegend"), lineChartData);
+			document.getElementById("title").innerHTML = data.name;
+		});
+	}
+
+
+	</script>
+	</body>
+</html>
