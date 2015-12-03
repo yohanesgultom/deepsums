@@ -4,11 +4,12 @@
 # Parse DUC dataset for summarization and generate feature matrix
 
 from lxml import html
-from os import listdir
-from os.path import isfile, join
+from os import listdir, makedirs, remove, errno
+from os.path import isfile, join, dirname, exists
 import sys
 import math
 import time
+import ntpath
 
 # return True if an int
 def isint(x):
@@ -26,6 +27,19 @@ def normalize(x, min, max):
 def printcsv(arr):
     for row in arr:
         print ', '.join(['{:.2f}'.format(x) for x in row])
+
+# silent remove a file
+def silentremove(filename):
+    try:
+        remove(filename)
+    except OSError as e: # this would be "except OSError, e:" before Python 2.6
+        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+            raise # re-raise exception if a different error occured
+
+# get filename from path
+def filename(path):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
 
 # parse a DUC document
 def parse_duc(file, removeStop = True):
@@ -269,6 +283,32 @@ def describe_summaries(summaryDir, summaryStartWith, originalDir):
             if (not found): print 'notfound'
 
 
+# create clean doc
+def create_clean_doc(sourceFile, targetFile):
+    # silent remove file
+    silentremove(targetFile)
+
+    # create dir if not exist
+    dir = dirname(targetFile)
+    if not exists(dir):
+        makedirs(dir)
+
+    # parse the text
+    doc = html.parse(sourceFile)
+    fout = open(targetFile, 'wb')
+    for el in doc.getroot()[0]:
+        if el.tag == 'sentence' and isint(el.attrib['id']):
+            # write to file
+            fout.write(el.text.strip() + '\n')
+    fout.close()
+
+# create clean dir
+def create_clean_dir(sourceDir, targetDir):
+    for f in listdir(sourceDir):
+        sourceFile = join(sourceDir, f)
+        targetFile = join(targetDir, f)
+        create_clean_doc(sourceFile, targetFile)
+
 # main program
 if __name__ == "__main__":
     # ticks = time.time() * -1
@@ -297,6 +337,9 @@ if __name__ == "__main__":
         #     python duc_parser.py -sentences /home/yohanes/Workspace/duc/06/D0602B
         feature_matrix = get_feature_matrix(sys.argv[2], [], True)
         printcsv(feature_matrix)
+    elif argc == 4 and sys.argv[1] == '-textonly':
+        # python duc_parser.py -textonly /home/yohanes/Workspace/duc/06/D0601A /home/yohanes/Workspace/duc/clean/06/D0601A
+        create_clean_dir(sys.argv[2], sys.argv[3])
     else:
         print "insufficient args. example:"
         print "compare summary and original \t python duc_parser.py -describe /home/yohanes/Workspace/duc/06/D0601A /home/yohanes/Workspace/duc/original/06/models D0601"
