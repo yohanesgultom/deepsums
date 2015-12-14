@@ -5,7 +5,7 @@
 
 from lxml import html
 from os import listdir, makedirs, remove, errno
-from os.path import isfile, join, dirname, exists
+from os.path import isfile, join, dirname, exists, basename
 import sys
 import math
 import time
@@ -282,6 +282,38 @@ def describe_summaries(summaryDir, summaryStartWith, originalDir):
             if (found): break
             if (not found): print 'notfound'
 
+# croschecks summary and original docs and extracts mutual sentences to targetDir
+def clean_summaries(summaryDir, summaryStartWith, originalDir, targetDir):
+    docs = parse_duc_dir(originalDir)
+    summaries = get_summaries(summaryDir, summaryStartWith)
+    sentences = []
+    for sum in summaries:
+        for ssum in sum['sentences']:
+            found = False
+            for doc in docs:
+                for s in doc['sentences']:
+                    if (s['text'].lower() == ssum.lower()):
+                        sentences.append(s['text'])
+                        found = True
+                        break
+                if (found): break
+            if (found): break
+
+        # create and write to file
+        if len(sentences) > 0:
+            filename = basename(sum['id']) + '.ref.summary'
+            filepath = join(targetDir, filename)
+
+            # silent remove file
+            silentremove(filepath)
+
+            # create dir if not exist
+            if not exists(targetDir): makedirs(targetDir)
+
+            # write to file
+            fout = open(filepath, 'wb')
+            for s in sentences: fout.write(s.strip() + '\n')
+            fout.close()
 
 # create clean doc
 def create_clean_doc(sourceFile, targetFile):
@@ -318,6 +350,10 @@ if __name__ == "__main__":
         # eg: python duc_parser.py -describe /home/yohanes/Workspace/duc/06/D0601A /home/yohanes/Workspace/duc/original/06/models D0601
         #     python duc_parser.py -describe /home/yohanes/Workspace/duc/06/D0602B /home/yohanes/Workspace/duc/original/06/models D0602
         describe_summaries(sys.argv[3], sys.argv[4], sys.argv[2])
+    if argc == 6 and sys.argv[1] == '-cleansum':
+        # eg: python duc_parser.py -cleansum /home/yohanes/Workspace/duc/06/D0607G /home/yohanes/Workspace/duc/original/06/models D0607 /home/yohanes/Workspace/duc/cleansum/06/D0607G
+        #     python duc_parser.py -cleansum /home/yohanes/Workspace/duc/06/D0608H /home/yohanes/Workspace/duc/original/06/models D0608 /home/yohanes/Workspace/duc/cleansum/06/D0608H
+        clean_summaries(sys.argv[3], sys.argv[4], sys.argv[2], sys.argv[5])
     elif argc == 5 and sys.argv[1] == '-feature':
         # labeled for training
         # eg: python duc_parser.py -feature /home/yohanes/Workspace/duc/06/D0601A /home/yohanes/Workspace/duc/original/06/models D0601

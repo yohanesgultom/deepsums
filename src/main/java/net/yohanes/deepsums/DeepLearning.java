@@ -1,10 +1,5 @@
 package net.yohanes.deepsums;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -25,6 +20,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 public class DeepLearning {
 
@@ -33,7 +33,7 @@ public class DeepLearning {
     private static MultiLayerNetwork model;
 
     private final int numRows = 4;
-    private int iterations = 10;
+    private int iterations = 20;
     private int seed = 123;
 
     private MultiLayerNetwork getModel() {
@@ -42,15 +42,13 @@ public class DeepLearning {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(seed) // Locks in weight initialization for tuning
                 .iterations(iterations) // # training iterations predict/classify & backprop
-                .learningRate(1e-1f) // Backprop step size
-                .momentum(0.1) // Speed of modifying learning rate
                 .list(2) // # NN layers (doesn't count input layer)
                 .layer(0, new RBM.Builder()
                         .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                         .hiddenUnit(RBM.HiddenUnit.BINARY)
                         .nIn(numRows) // # input nodes
                         .nOut(numRows) // # output nodes
-                        .weightInit(WeightInit.NORMALIZED) // Weight initialization
+                        .weightInit(WeightInit.XAVIER) // Weight initialization
                         .k(1) // # contrastive divergence iterations
                         .activation("sigmoid") // Activation function type
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY) // Loss function type
@@ -60,7 +58,7 @@ public class DeepLearning {
                         .hiddenUnit(RBM.HiddenUnit.GAUSSIAN)
                         .nIn(numRows) // # input nodes
                         .nOut(numRows) // # output nodes
-                        .weightInit(WeightInit.NORMALIZED) // Weight initialization
+                        .weightInit(WeightInit.XAVIER) // Weight initialization
                         .k(1) // # contrastive divergence iterations
                         .activation("sigmoid") // Activation function type
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY) // Loss function type
@@ -148,7 +146,7 @@ public class DeepLearning {
 //        log.info("Avg threshold: " + StringUtils.join(averageThreshold, ','));
 
 //        log.info("totalCorrect + totalWrong = " + totalCorrect + " + " + totalWrong + " = " + sentencesIds.size());
-        log.info("totalCorrect / totalRetrieved = " + totalCorrect + " (" + totalCorrectExpected + ") " + " / " + sentencesIds.size() + " = " + (totalCorrect / new Double(sentencesIds.size())));
+        log.info("totalCorrect / totalRetrieved = " + totalCorrect + " (" + totalCorrectExpected + ") " + " / " + sentencesIds.size() + " (" + iterTest.numExamples() + ") = " + (totalCorrect / new Double(sentencesIds.size())));
         return new Summary(summary, rawData, sentencesIds.size(), totalCorrect, totalCorrectExpected);
     }
 
@@ -167,6 +165,7 @@ public class DeepLearning {
             deepLearning.train(filepath);
         }
         //testing
+        Random randomGenerator = new Random();
         ArrayList<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
         for (Map<String, Object> testing : (ArrayList<Map<String, Object>>) conf.get("testing")) {
 //            log.info("testing: " + testing.get("data"));
@@ -174,8 +173,13 @@ public class DeepLearning {
             ArrayList<Double> precisionList = new ArrayList<Double>();
             ArrayList<Double> f1List = new ArrayList<Double>();
             ArrayList<Double> thresholdRaw = (ArrayList<Double>) testing.get("threshold");
+            Summary bestSummary = null;
+            float bestFMeasure = 0f;
             for (Double raw : thresholdRaw) {
-                float[] threshold = { 0.0f, 0.0f, raw.floatValue(), 0.0f };
+                float[] threshold = { 0.0f, 0.0f, 0.0f, 0.0f };
+//                int randomInt = randomGenerator.nextInt(4);
+//                threshold[randomInt] = raw.floatValue();
+                threshold[0] = raw.floatValue();
                 Summary summary = deepLearning.summarize(
                         (String) testing.get("data"),
                         (String) testing.get("sentences"),
@@ -183,6 +187,12 @@ public class DeepLearning {
                 recallList.add(new Double(summary.getRecall()));
                 precisionList.add(new Double(summary.getPrecision()));
                 f1List.add(new Double(summary.getFMeasure()));
+
+                float fMeasure = summary.getFMeasure();
+                if (fMeasure > bestFMeasure) {
+                    bestSummary = summary;
+                    bestFMeasure = fMeasure;
+                }
             }
             Map<String, Object> result = new LinkedHashMap<String, Object>();
             result.put("name", testing.get("data"));
@@ -191,6 +201,25 @@ public class DeepLearning {
             result.put("precision", precisionList);
             result.put("f1", f1List);
             results.add(result);
+
+            // write to file
+            try {
+                String userQuery = (String) testing.get("query");
+                Double compressionRate = (Double) testing.get("compression");
+                List<String> summaryBasedOnQuery = bestSummary.getSummary(userQuery, compressionRate.floatValue());
+                InputStream is = IOUtils.toInputStream(StringUtils.join(summaryBasedOnQuery, '\n'), "utf-8");
+                Pattern filenamePattern = Pattern.compile("[^/]*(?=\\.[^.]+($|\\?))");
+                Matcher filenameMatcher = filenamePattern.matcher((String) testing.get("data"));
+                if (filenameMatcher.find()) {
+                    OutputStream o = new FileOutputStream(filenameMatcher.group(0) + ".summary");
+                    IOUtils.copy(is, o);
+                    IOUtils.closeQuietly(o);
+                } else {
+                    throw new IOException("Invalid filename: " + testing.get("data"));
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
         }
         mapper.writeValue(new File("report.json"), results);
     }
