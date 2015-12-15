@@ -81,7 +81,7 @@ public class DeepLearning {
         trainModel.fit(train.getFeatureMatrix());
     }
 
-    public Summary summarize(String filepathTest, String filepathSentencesTest, float[] fThreshold) throws IOException {
+    public Summary summarize(String filepathTest, String filepathSentencesTest, float fThreshold) throws IOException {
         int numSamples = -1; // use all samples
         int batchSize = 100;
 
@@ -91,40 +91,40 @@ public class DeepLearning {
 
         MultiLayerNetwork testModel = this.getModel();
         DataSetIterator iterTest = new DUCDataSetIterator(batchSize, numSamples, filepathTest);
+
         // do summarization based on threshold
+        Random randomGenerator = new Random();
         List<Integer> sentencesIds = new ArrayList<Integer>();
         int totalSentences = 0;
         int totalCorrect = 0;
         int totalCorrectExpected = 0;
+        float[] minThreshold = {0.0f, 0.0f, 0.0f, 0.0f};
         float[] maxThreshold = {0.0f, 0.0f, 0.0f, 0.0f};
         float[] averageThreshold = {0.0f, 0.0f, 0.0f, 0.0f};
         while (iterTest.hasNext()) {
             DataSet batch = iterTest.next();
             INDArray labels = batch.getLabels();
-            // choose random threshold {f1, f2, f3, f4}
             INDArray o = testModel.output(batch.getFeatureMatrix());
             int rowCount = o.rows();
             for (int i=0; i<rowCount;i++) {
                 INDArray row = o.getRow(i);
-                boolean take = true;
-                for (int j=0; j<fThreshold.length; j++) {
-                    // get max threshold for analysis
-                    maxThreshold[j] = (maxThreshold[j] < row.getFloat(j)) ? row.getFloat(j) : maxThreshold[j];
-                    averageThreshold[j] += row.getFloat(j);
-                    if (fThreshold[j] != 0.0f && row.getFloat(j) < fThreshold[j]) {
-                        // don't use sentence as summary
-                        take = false;
-                        break;
-                    }
-                }
-                if (take) {
+                // select feature {f1, f2, f3, f4} randomly and compare with threshold
+                int randomInt = randomGenerator.nextInt(4);
+                if (row.getFloat(randomInt) > fThreshold) {
                     sentencesIds.add(i);
                     if (labels.getRow(i).getFloat(0) == 1.0f) {
                         totalCorrect++;
                     }
                 }
+                // calculate expected correct
                 if (labels.getRow(i).getFloat(0) == 1.0f) {
                     totalCorrectExpected++;
+                }
+                // get min, max and avg threshold for analysis
+                for (int j=0; j < averageThreshold.length; j++) {
+                    minThreshold[j] = (minThreshold[j] > row.getFloat(j)) ? row.getFloat(j) : minThreshold[j];
+                    maxThreshold[j] = (maxThreshold[j] < row.getFloat(j)) ? row.getFloat(j) : maxThreshold[j];
+                    averageThreshold[j] += row.getFloat(j);
                 }
             }
             totalSentences += o.rows();
@@ -142,6 +142,7 @@ public class DeepLearning {
             averageThreshold[i] = averageThreshold[i] / totalSentences;
         }
 
+//        log.info("Min threshold: " + StringUtils.join(minThreshold, ','));
 //        log.info("Max threshold: " + StringUtils.join(maxThreshold, ','));
 //        log.info("Avg threshold: " + StringUtils.join(averageThreshold, ','));
 
@@ -165,7 +166,7 @@ public class DeepLearning {
             deepLearning.train(filepath);
         }
         //testing
-        Random randomGenerator = new Random();
+//        Random randomGenerator = new Random();
         ArrayList<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
         for (Map<String, Object> testing : (ArrayList<Map<String, Object>>) conf.get("testing")) {
 //            log.info("testing: " + testing.get("data"));
@@ -175,15 +176,12 @@ public class DeepLearning {
             ArrayList<Double> thresholdRaw = (ArrayList<Double>) testing.get("threshold");
             Summary bestSummary = null;
             float bestFMeasure = 0f;
+            log.info((String)testing.get("data"));
             for (Double raw : thresholdRaw) {
-                float[] threshold = { 0.0f, 0.0f, 0.0f, 0.0f };
-//                int randomInt = randomGenerator.nextInt(4);
-//                threshold[randomInt] = raw.floatValue();
-                threshold[0] = raw.floatValue();
                 Summary summary = deepLearning.summarize(
                         (String) testing.get("data"),
                         (String) testing.get("sentences"),
-                        threshold);
+                        raw.floatValue());
                 recallList.add(new Double(summary.getRecall()));
                 precisionList.add(new Double(summary.getPrecision()));
                 f1List.add(new Double(summary.getFMeasure()));

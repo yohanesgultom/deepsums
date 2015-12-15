@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 	<head>
-		<title>Deep Multidocument Summarization</title>
+		<title>Line Chart</title>
 		<script src="jquery-1.11.3.min.js"></script>
 		<script src="Chart.min.js"></script>
 		<style>
@@ -157,7 +157,7 @@
 		lineChartData.datasets[0].data = data.recall;
 		lineChartData.datasets[1].data = data.precision;
 		lineChartData.datasets[2].data = data.f1;
-		var chart = new Chart(ctx).Line(lineChartData, {
+		new Chart(ctx).Line(lineChartData, {
 			responsive: true,
 			datasetFill: false,
 			bezierCurve: false,
@@ -166,7 +166,6 @@
 			scaleStepWidth: 0.1,
 			scaleStartValue: 0
 		});
-
 		legend(lineLegend[0], lineChartData);
 	}
 

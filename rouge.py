@@ -1,5 +1,6 @@
 import PythonROUGE.PythonROUGE
 import os
+import json
 
 def get_file_list_in_dir(dir, startWith = None, limit = None):
     list = []
@@ -24,5 +25,10 @@ def calculate(guess, refdir, refstart, limit):
 
 if __name__ == "__main__":
     calculate('./D0607.summary', '/home/yohanes/Workspace/duc/cleansum/06/D0607G', 'D0607', 10)
+    calculate('/home/yohanes/Workspace/duc/clean/06/D0607G/D0607G.mmr.summary', '/home/yohanes/Workspace/duc/cleansum/06/D0607G', 'D0607', 10)
+
     calculate('./D0608.summary', '/home/yohanes/Workspace/duc/cleansum/06/D0608H', 'D0608', 10)
+    calculate('/home/yohanes/Workspace/duc/clean/06/D0608H/D0608H.mmr.summary', '/home/yohanes/Workspace/duc/cleansum/06/D0608H', 'D0608', 10)
+
     calculate('./D0609.summary', '/home/yohanes/Workspace/duc/cleansum/06/D0609I', 'D0609', 10)
+    calculate('/home/yohanes/Workspace/duc/clean/06/D0609I/D0609I.mmr.summary', '/home/yohanes/Workspace/duc/cleansum/06/D0609I', 'D0609', 10)

@@ -8,21 +8,21 @@
     {
       "data" : "dataset/D0607.csv",
       "sentences" : "dataset/D0607.txt",
-      "threshold" : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+      "threshold" : [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1],
       "compression" : 0.4,
       "query" : "Note examples of civil unrest in China and the Chinese government's policy toward and reaction to it"
     },
     {
       "data" : "dataset/D0608.csv",
       "sentences" : "dataset/D0608.txt",
-      "threshold" : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+      "threshold" : [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1],
       "compression" : 0.4,
       "query" : "What devices and procedures have been implemented to improve automobile safety"
     },
     {
       "data" : "dataset/D0609.csv",
       "sentences" : "dataset/D0609.txt",
-      "threshold" : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+      "threshold" : [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1],
       "compression" : 0.4,
       "query" : "What impact have Israeli settlements in the West Bank had on the Israeli/Palestinian peace process"
     }
