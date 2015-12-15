@@ -47,7 +47,7 @@ public class Summary {
         // calculate similarity
         if (this.sentences != null) {
             // expected sentences
-            int expectedSentences = Math.round(compression * this.sentences.size());
+            int expectedSentences = Math.round(compression * rawData.length);
             for (int i = 0; i< this.sentences.size(); i++) {
                 scores.put(i, this.getSimilarity(query, this.sentences.get(i)));
             }

@@ -12,3 +12,6 @@ perl ~/mead/bin/addons/formatting/text2cluster.pl /home/yohanes/Workspace/duc/cl
 mead.pl -p 40 -reranker "/home/yohanes/mead/bin/cst-rerankers/mmr-reranker.pl 1.0 MEAD-cosine enidf" -output /home/yohanes/Workspace/duc/clean/06/D0607G/D0607G.mmr.summary  /home/yohanes/Workspace/duc/clean/06/D0607G
 mead.pl -p 40 -reranker "/home/yohanes/mead/bin/cst-rerankers/mmr-reranker.pl 1.0 MEAD-cosine enidf" -output /home/yohanes/Workspace/duc/clean/06/D0608H/D0608H.mmr.summary  /home/yohanes/Workspace/duc/clean/06/D0608H
 mead.pl -p 40 -reranker "/home/yohanes/mead/bin/cst-rerankers/mmr-reranker.pl 1.0 MEAD-cosine enidf" -output /home/yohanes/Workspace/duc/clean/06/D0609I/D0609I.mmr.summary  /home/yohanes/Workspace/duc/clean/06/D0609I
+
+# run rouge.py to compare results
+python rouge.py

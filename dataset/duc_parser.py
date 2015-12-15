@@ -151,6 +151,7 @@ def concept_feature_two_terms(term1, term2, doc):
 def title_similarity(title, sentence):
     similar = 0
     sentenceLen = len(sentence['words'])
+    titleLen = len(title)
     if (sentenceLen > 0):
         for ws in sentence['words']:
             for wt in title['words']:
